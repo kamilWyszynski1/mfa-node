@@ -46,4 +46,6 @@ npm start serve
 > This starts a local server using `nodemon`, which will watch for any file changes and will restart the sever according to these changes.
 > The server address will be displayed to you as `http://0.0.0.0:3000`.
 
-![divider](./w3tec-divider.png)
+
+## Credits:
+https://www.freecodecamp.org/news/how-time-based-one-time-passwords-work-and-why-you-should-use-them-in-your-app-fdd2b9ed43c3/
