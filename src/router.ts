@@ -24,15 +24,28 @@ export class UsersRoutes extends CommonRoutesConfig {
     }
 
     configureRoutes() {
-        this.app.get('/', (req, res) => {
-            res.send('The sedulous hyena ate the antelope!');
-        });
+        this.app.route('/mfa/:user')
+            .get((req: express.Request, res: express.Response) => {
+                const user = req.params.user;
 
-        this.app.get('/mfa/:user', (req: express.Request, res: express.Response) => {
-            const user = req.params.user;
-
-            res.status(200).send(this.mfa.generateSecretKeyForUser(user))
-        });
+                this.mfa.getSecretKeyForUser(user, (sk: string) => {
+                    if (sk) {
+                        res.status(200).send({ 'secretKey': sk })
+                    } else {
+                        res.status(404).send({ 'error': "There's no data for that user" })
+                    }
+                })
+            })
+            .post((req: express.Request, res: express.Response) => {
+                const user = req.params.user;
+                this.mfa.generateSecretKeyForUser(user, (err: Error) => {
+                    if (err) {
+                        res.status(404).send({ 'error': err.message })
+                    } else {
+                        res.status(201).send()
+                    }
+                })
+            })
         // (we'll add the actual route configuration here next)
         return this.app;
     }
