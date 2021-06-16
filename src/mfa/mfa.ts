@@ -1,5 +1,7 @@
 import { MFADbProvider } from "./db"
 
+import { createHash, createHmac } from 'crypto'
+
 /*
 // SET MFA
     When user request to enable 2-factor authentication
@@ -16,6 +18,8 @@ USE MFA:
 
 type mfaCallback = (sk: string) => any
 
+const TOTP_WINDOW = 30 // 30s time window for proper key
+const numberOfDigitsRequiredInOTP = 6
 
 export default class MFAProvider {
     dbProvider: MFADbProvider
@@ -67,8 +71,28 @@ export default class MFAProvider {
 
     // generateTOTP get's user secret key and current timestamp 
     // and uses cryptographic function to create 6-digit password
-    generateTOTP(): string {
-        return ""
+    generateTOTP(user: string, cb: (totp: number) => any) {
+        this.getSecretKeyForUser(user, (sk: string) => {
+            const hmacSHA1 = createHmac("sha1", sk);
+            const counter: string = Math.floor(+new Date / 1000 / TOTP_WINDOW).toString();
+            const hmacHash: string = hmacSHA1.update(counter).digest('hex');
+
+            let offset: number = hmacHash.charCodeAt(hmacHash.length - 1) & 0xf;
+            const truncatedHash: number = (hmacHash.charCodeAt(offset++) & 0x7f) << 24 | (hmacHash.charCodeAt(offset++) & 0xff) << 16 | (hmacHash.charCodeAt(offset++) & 0xff) << 8 | (hmacHash.charCodeAt(offset++) & 0xff);
+
+            console.log(`counter: ${counter}, hash: ${hmacHash}, offset: ${offset}, trunc: ${truncatedHash}`);
+
+            cb(+truncatedHash.toString().substr(0, numberOfDigitsRequiredInOTP));
+        })
+    }
+
+    validateTOTP(user: string, totp: number, cb: (valid: boolean) => any) {
+        console.log(`received totp: ${totp}`)
+
+        this.generateTOTP(user, (generatedTOTP: number) => {
+            cb(totp == generatedTOTP)
+        })
+
     }
 }
 

@@ -1,5 +1,6 @@
-import express from 'express';
+import express, { Router } from 'express';
 import MFAProvider from './mfa/mfa';
+import { toDataURL } from 'qrcode'
 
 export abstract class CommonRoutesConfig {
     app: express.Application;
@@ -46,7 +47,41 @@ export class UsersRoutes extends CommonRoutesConfig {
                     }
                 })
             })
-        // (we'll add the actual route configuration here next)
+
+        this.app.route('/mfa/:user/totp')
+            .post((req: express.Request, res: express.Response) => {
+                const user = req.params.user;
+
+                this.mfa.generateTOTP(user, (totp: number) => {
+                    if (totp) {
+                        res.status(200).send({ 'totp': totp })
+                    } else {
+                        res.status(500).send({ 'error': "Failed to generate TOTP for that user" })
+                    }
+                })
+            })
+
+        this.app.route('/mfa/:user/validate')
+            .post((req: express.Request, res: express.Response) => {
+                const user = req.params.user;
+                const totp = req.body.totp;
+
+                this.mfa.validateTOTP(user, totp, (valid: boolean) => {
+                    if (valid) {
+                        res.status(200).send({ 'valid': valid })
+                    } else {
+                        res.status(401).send({ 'error': "Invalid TOTP" })
+                    }
+                })
+            })
+
+        this.app.route('/qr')
+            .get((req: express.Request, res: express.Response) => {
+                toDataURL('some text', { errorCorrectionLevel: 'H' }, function (err, url) {
+                    console.log(url)
+                })
+            })
+
         return this.app;
     }
 }
