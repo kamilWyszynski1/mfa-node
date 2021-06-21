@@ -3,26 +3,30 @@ import express from 'express';
 
 import * as http from 'http';
 
-import * as winston from 'winston';
-import * as expressWinston from 'express-winston';
 import cors from 'cors';
 import debug from 'debug';
+import * as expressWinston from 'express-winston';
+import * as winston from 'winston';
 
-import { CommonRoutesConfig, UsersRoutes } from './router';
+import { MFARedisDB } from './mfa/db';
 import MFAProvider from './mfa/mfa';
-import { MFALocalDB, MFARedisDB } from './mfa/db';
+import { CommonRoutesConfig, UsersRoutes } from './router';
+
+import { createClient, RedisClient } from 'redis';
+import AuthProvider from './auth/registration';
+import { RedisAuthDB } from './auth/db';
 
 const app: express.Application = express();
 const server: http.Server = http.createServer(app);
-const port = 3000;
+const port: number = 3000;
 const routes: CommonRoutesConfig[] = [];
 const debugLog: debug.IDebugger = debug('app');
 
-import { createClient, RedisClient } from 'redis';
 
-const redisClient: RedisClient = createClient(6379, 'localhost');
+const redisClient: RedisClient = createClient('redis://rediscachev1.eypl9h.ng.0001.usw1.cache.amazonaws.com');
 
 const mfa: MFAProvider = new MFAProvider(new MFARedisDB(redisClient))
+const auth: AuthProvider = new AuthProvider(new RedisAuthDB(redisClient), "secretKey")
 
 // here we are adding middleware to parse all incoming requests as JSON
 app.use(express.json());
@@ -50,11 +54,11 @@ app.use(expressWinston.logger(loggerOptions));
 
 // here we are adding the UserRoutes to our array,
 // after sending the Express.js application object to have the routes added to our app!
-routes.push(new UsersRoutes(app, mfa));
+routes.push(new UsersRoutes(app, mfa, auth));
 
 // this is a simple route to make sure everything is working properly
 const runningMessage = `Server running at http://localhost:${port}`;
-app.get('/', (req: express.Request, res: express.Response) => {
+app.get('/', (_req: express.Request, res: express.Response) => {
     res.status(200).send(runningMessage)
 });
 

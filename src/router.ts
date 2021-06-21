@@ -1,30 +1,36 @@
 import express, { Router } from 'express';
-import MFAProvider from './mfa/mfa';
 import { toDataURL } from 'qrcode'
+import { User } from './auth/db';
+import AuthProvider from './auth/registration';
+import MFAProvider from './mfa/mfa';
 
 export abstract class CommonRoutesConfig {
-    app: express.Application;
-    mfa: MFAProvider;
-    name: string;
+    protected readonly app: express.Application;
+    protected readonly mfa: MFAProvider;
+    protected readonly name: string;
+    protected readonly auth: AuthProvider;
 
-    constructor(app: express.Application, mfa: MFAProvider, name: string) {
+    constructor(app: express.Application, mfa: MFAProvider, auth: AuthProvider, name: string) {
         this.app = app;
         this.name = name;
         this.mfa = mfa;
+        this.auth = auth;
         this.configureRoutes();
     }
-    getName() {
+
+    public getName() {
         return this.name;
     }
-    abstract configureRoutes(): express.Application;
+
+    public abstract configureRoutes(): express.Application;
 }
 
 export class UsersRoutes extends CommonRoutesConfig {
-    constructor(app: express.Application, mfa: MFAProvider) {
-        super(app, mfa, 'UsersRoutes');
+    constructor(app: express.Application, mfa: MFAProvider, auth: AuthProvider) {
+        super(app, mfa, auth, 'UsersRoutes');
     }
 
-    configureRoutes() {
+    public configureRoutes() {
         this.app.route('/mfa/:user')
             .get((req: express.Request, res: express.Response) => {
                 const user = req.params.user;
@@ -79,6 +85,27 @@ export class UsersRoutes extends CommonRoutesConfig {
             .get((req: express.Request, res: express.Response) => {
                 toDataURL('some text', { errorCorrectionLevel: 'H' }, function (err, url) {
                     console.log(url)
+                })
+            })
+
+        // AUTH ENDPOINTS
+        this.app.route('/register')
+            .post((req: express.Request, res: express.Response) => {
+                const username = req.body.username;
+                const password = req.body.password;
+
+                const user: User = this.auth.createUser(username, password)
+
+                res.status(200).json(user)
+            })
+
+        this.app.route('/login')
+            .post((req: express.Request, res: express.Response) => {
+                const username = req.body.username;
+                const password = req.body.password;
+
+                this.auth.checkPassword(username, password, (valid: boolean) => {
+                    res.status(valid ? 200 : 400).send({ 'logged': valid })
                 })
             })
 
