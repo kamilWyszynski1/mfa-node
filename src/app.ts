@@ -63,11 +63,19 @@ app.get('/', (_req: express.Request, res: express.Response) => {
 });
 
 
-server.listen(port, () => {
-    routes.forEach((route: CommonRoutesConfig) => {
-        debugLog(`Routes configured for ${route.getName()}`);
+if (process.env.AWS) {
+    exports.handler = async function (event, context) {
+        console.log("EVENT: \n" + JSON.stringify(event, null, 2))
+        return context.logStreamName
+    }
+} else {
+    server.listen(port, () => {
+        routes.forEach((route: CommonRoutesConfig) => {
+            debugLog(`Routes configured for ${route.getName()}`);
+        });
+        // our only exception to avoiding console.log(), because we
+        // always want to know when the server is done starting up
+        console.log(runningMessage);
     });
-    // our only exception to avoiding console.log(), because we
-    // always want to know when the server is done starting up
-    console.log(runningMessage);
-});
+}
+
