@@ -47,7 +47,6 @@ export default class MFAProvider {
             if (sk) {
                 cb(new Error("Secret key for that user already exists"))
             }
-            cb(null);
         });
 
         const sk = this.generateSecretKey(this.secretKeyLength)
@@ -56,6 +55,7 @@ export default class MFAProvider {
             if (err) {
                 cb(err)
             }
+            cb(null)
         })
     }
 

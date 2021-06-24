@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { toDataURL } from 'qrcode'
+// import { toDataURL } from 'qrcode'
 import { User } from './auth/db';
 import AuthProvider from './auth/registration';
 import MFAProvider from './mfa/mfa';
@@ -81,12 +81,12 @@ export class UsersRoutes extends CommonRoutesConfig {
                 })
             })
 
-        this.app.route('/qr')
-            .get((req: express.Request, res: express.Response) => {
-                toDataURL('some text', { errorCorrectionLevel: 'H' }, function (err, url) {
-                    console.log(url)
-                })
-            })
+        // this.app.route('/qr')
+        //     .get((req: express.Request, res: express.Response) => {
+        //         toDataURL('some text', { errorCorrectionLevel: 'H' }, function (err, url) {
+        //             console.log(url)
+        //         })
+        //     })
 
         // AUTH ENDPOINTS
         this.app.route('/register')

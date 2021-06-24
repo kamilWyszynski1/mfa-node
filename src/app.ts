@@ -3,7 +3,7 @@ import express from 'express';
 
 import * as http from 'http';
 
-import cors from 'cors';
+// import cors from 'cors';
 import debug from 'debug';
 import * as expressWinston from 'express-winston';
 import * as winston from 'winston';
@@ -32,7 +32,7 @@ const auth: AuthProvider = new AuthProvider(new RedisAuthDB(redisClient), "secre
 app.use(express.json());
 
 // here we are adding middleware to allow cross-origin requests
-app.use(cors());
+// app.use(cors());
 
 // here we are preparing the expressWinston logging middleware configuration,
 // which will automatically log all HTTP requests handled by Express.js

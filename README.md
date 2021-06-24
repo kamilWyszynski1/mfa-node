@@ -1,51 +1,135 @@
-# mfa-node
+<!--
+title: 'Serverless Framework Node Express API on AWS'
+description: 'This template demonstrates how to develop and deploy a simple Node Express API running on AWS Lambda using the traditional Serverless Framework.'
+layout: Doc
+framework: v2
+platform: AWS
+language: nodeJS
+authorLink: 'https://github.com/serverless'
+authorName: 'Serverless, inc.'
+authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
+-->
 
-### Step 1: Set up the Development Environment
+# Serverless Framework Node Express API on AWS
 
-You need to set up your development environment before you can do anything.
+This template demonstrates how to develop and deploy a simple Node Express API service running on AWS Lambda using the traditional Serverless Framework.
 
-Install [Node.js and NPM](https://nodejs.org/en/download/)
+## Anatomy of the template
 
-- on OSX use [homebrew](http://brew.sh) `brew install node`
-- on Windows use [chocolatey](https://chocolatey.org/) `choco install nodejs`
+This template configures a single function, `api`, which is responsible for handling all incoming requests thanks to configured `http` events. To learn more about `http` event configuration options, please refer to [http event docs](https://www.serverless.com/framework/docs/providers/aws/events/apigateway/). As the events are configured in a way to accept all incoming requests, `express` framework is responsible for routing and handling requests internally. Implementation takes advantage of `serverless-http` package, which allows you to wrap existing `express` applications. To learn more about `serverless-http`, please refer to corresponding [GitHub repository](https://github.com/dougmoscrop/serverless-http).
 
-Install yarn globally
+## Usage
 
-```bash
-npm install yarn -g
+### Deployment
+
+This example is made to work with the Serverless Framework dashboard, which includes advanced features such as CI/CD, monitoring, metrics, etc.
+
+In order to deploy with dashboard, you need to first login with:
+
+```
+serverless login
 ```
 
-Install a MySQL database.
+install dependencies with:
 
-> If you work with a mac, we recommend to use homebrew for the installation.
-
-### Step 2: Create new Project
-
-Clone this project.
-
-Then copy the `.env.example` file and rename it to `.env`. In this file you have to add your database connection information.
-
-Create a new database with the name you have in your `.env`-file.
-
-Then setup your application environment.
-
-```bash
-npm run setup
+```
+npm install
 ```
 
-> This installs all dependencies with yarn. After that it migrates the database and seeds some test data into it. So after that your development environment is ready to use.
+and then perform deployment with:
 
-### Step 3: Serve your App
-
-Go to the project dir and start your app with this npm script.
-
-```bash
-npm start serve
+```
+serverless deploy
 ```
 
-> This starts a local server using `nodemon`, which will watch for any file changes and will restart the sever according to these changes.
-> The server address will be displayed to you as `http://0.0.0.0:3000`.
+After running deploy, you should see output similar to:
 
+```bash
+Serverless: Packaging service...
+Serverless: Excluding development dependencies...
+Serverless: Creating Stack...
+Serverless: Checking Stack create progress...
+........
+Serverless: Stack create finished...
+Serverless: Uploading CloudFormation file to S3...
+Serverless: Uploading artifacts...
+Serverless: Uploading service aws-node-express-api.zip file to S3 (711.23 KB)...
+Serverless: Validating template...
+Serverless: Updating Stack...
+Serverless: Checking Stack update progress...
+.................................
+Serverless: Stack update finished...
+Service Information
+service: aws-node-express-api
+stage: dev
+region: us-east-1
+stack: aws-node-express-api-dev
+resources: 12
+api keys:
+  None
+endpoints:
+  ANY - https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/
+  ANY - https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/{proxy+}
+functions:
+  api: aws-node-express-api-dev-api
+layers:
+  None
+```
 
-## Credits:
-https://www.freecodecamp.org/news/how-time-based-one-time-passwords-work-and-why-you-should-use-them-in-your-app-fdd2b9ed43c3/
+_Note_: In current form, after deployment, your API is public and can be invoked by anyone. For production deployments, you might want to configure an authorizer. For details on how to do that, refer to [http event docs](https://www.serverless.com/framework/docs/providers/aws/events/apigateway/).
+
+### Invocation
+
+After successful deployment, you can call the created application via HTTP:
+
+```bash
+curl https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/
+```
+
+Which should result in the following response:
+
+```
+{"message":"Hello from root!"}
+```
+
+Calling the `/hello` path with:
+
+```bash
+curl https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/hello
+```
+
+Should result in the following response:
+
+```bash
+{"message":"Hello from path!"}
+```
+
+If you try to invoke a path or method that does not have a configured handler, e.g. with:
+
+```bash
+curl https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/nonexistent
+```
+
+You should receive the following response:
+
+```bash
+{"error":"Not Found"}
+```
+
+### Local development
+
+It is also possible to emulate API Gateway and Lambda locally by using `serverless-offline` plugin. In order to do that, execute the following command:
+
+```bash
+serverless plugin install -n serverless-offline
+```
+
+It will add the `serverless-offline` plugin to `devDependencies` in `package.json` file as well as will add it to `plugins` in `serverless.yml`.
+
+After installation, you can start local emulation with:
+
+```
+serverless offline
+```
+
+To learn more about the capabilities of `serverless-offline`, please refer to its [GitHub repository](https://github.com/dherault/serverless-offline).
