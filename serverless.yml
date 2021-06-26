@@ -17,15 +17,6 @@ functions:
     handler: handler.handler
     events:
       - http:
-          path: /
-          method: ANY
-      - http:
-          path: /{proxy+}
-          method: ANY
-      - http:
-          path: /hello
-          method: GET
-      - http:
           path: /mfa/{userID}
           method: ANY
 

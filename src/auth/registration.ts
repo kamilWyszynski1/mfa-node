@@ -28,4 +28,31 @@ export default class AuthProvider {
             cb(u.passwordHash == passwordHash)
         })
     }
+
+    login(username: string, cb: (token: string) => void) {
+        const token: string = `${username}:token`;
+
+
+        this.db.saveSession(username, token)
+        cb(token)
+    }
+
+    validateSession(sessionToken: string, cb: (valid: boolean) => void) {
+        const username: string = sessionToken.split(':')[0]
+        const token: string = sessionToken.split(':')[1]
+
+        console.log(`validating session for: ${sessionToken}`);
+
+        this.db.getSession(username, (dbToken: string) => {
+            console.log(`token from db: ${dbToken}, valid: ${dbToken == sessionToken}`);
+
+            cb(dbToken == sessionToken)
+        })
+    }
+
+    getUser(username: string, cb: (u: User) => any) {
+        this.db.getUser(username, (u: User) => {
+            cb(u)
+        })
+    }
 }
