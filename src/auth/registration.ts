@@ -14,8 +14,14 @@ export default class AuthProvider {
         return createHmac('sha256', this.secret).update(password).digest('base64')
     }
 
-    createUser(username: string, password: string): User {
-        return this.db.saveUser(username, this.encode(password))
+    createUser(username: string, password: string, cb: (registered: boolean) => void): User {
+        return this.db.saveUser(username, this.encode(password), (u: User) => {
+            if (u) {
+                cb(true)
+            } else {
+                cb(false)
+            }
+        })
     }
 
     checkPassword(username: string, password: string, cb: (valid: boolean) => any) {
@@ -31,7 +37,6 @@ export default class AuthProvider {
 
     login(username: string, cb: (token: string) => void) {
         const token: string = `${username}:token`;
-
 
         this.db.saveSession(username, token)
         cb(token)

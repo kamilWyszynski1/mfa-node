@@ -9,7 +9,7 @@ export interface User {
 
 
 export interface AuthDBProvider {
-    saveUser(username: string, passwordHash: string): User
+    saveUser(username: string, passwordHash: string, cb: (u: User) => void)
     getUser(username: string, cb: (u: User) => any)
     saveSession(username: string, token: string): void
     getSession(username: string, cb: (token: string) => void)
@@ -42,9 +42,15 @@ export class RedisAuthDB implements AuthDBProvider {
 
     }
 
-    saveUser(username: string, passwordHash: string): User {
-        this.redisClient.set(username, passwordHash, (err: Error, reply: string) => { console.log(`db saveuser: ${err}, ${reply}`) })
-        return { username: username, passwordHash: passwordHash }
+    saveUser(username: string, passwordHash: string, cb: (u: User) => void) {
+        this.redisClient.set(username, passwordHash, (err: Error, reply: string) => {
+            console.log(`db saveuser: ${err}, ${reply}`)
+            if (err) {
+                cb(null)
+            } else {
+                cb({ username: username, passwordHash: passwordHash })
+            }
+        })
     }
 
     getUser(username: string, cb: (u: User) => any) {
@@ -58,11 +64,12 @@ export class RedisAuthDB implements AuthDBProvider {
     }
 
     saveSession(username: string, token: string): void {
-        this.redisClient.setex(`token:${username}`, 10, token, (err: Error, reply: string) => { console.log(`db saveuser: ${err}, ${reply}`) })
+        this.redisClient.setex(`token:${username}`, 3000, token, (err: Error, reply: string) => { console.log(`db savesession: ${err}, ${reply}`) })
     }
 
     getSession(username: string, cb: (token: string) => void) {
         this.redisClient.get(`token:${username}`, (err: Error, token: string) => {
+            console.log(`getsession: ${err}, ${token}`)
             if (err) {
                 cb('')
             } else {

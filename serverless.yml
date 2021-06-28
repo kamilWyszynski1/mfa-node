@@ -8,17 +8,50 @@ frameworkVersion: '2'
 provider:
   name: aws
   runtime: nodejs12.x
+  region: us-west-2
   lambdaHashingVersion: '20201221'
+  environment:
+      REDIS_URL: redis://redis-auth.dxnhnb.ng.0001.usw2.cache.amazonaws.com:6379
   iam.role.managedPolicies:
     - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+  iam.role.statements:
+    - Effect: "Allow"
+      Action:
+        - "ec2:CreateNetworkInterface"
+        - "ec2:DescribeNetworkInterfaces"
+        - "ec2:DetachNetworkInterface"
+        - "ec2:DeleteNetworkInterface"
+      Resource: "*"
+  vpc:
+    securityGroupIds:
+      - sg-25cc191f
+    subnetIds: 
+      - subnet-b407009f
+      - subnet-89ce10c3
+      - subnet-5df57a00 
+      - subnet-4f3f8237
 
 functions:
+  authorizerFunc:
+    handler: src/authorizer/handler.authorize
   api:
     handler: handler.handler
+    timeout: 10 # optional, in seconds, default is 6
     events:
       - http:
           path: /mfa/{userID}
           method: ANY
+      - http:
+          path: /user/register
+          method: POST
+      - http:
+          path: /user/login
+          method: POST
+      - http:
+          path: /user/{username}
+          method: GET
+          authorizer: authorizerFunc
 
 plugins:
   - serverless-offline

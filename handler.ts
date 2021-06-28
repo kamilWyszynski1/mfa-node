@@ -11,7 +11,9 @@ import { RedisAuthDB } from "./src/auth/db";
 import AuthProvider from "./src/auth/registration";
 import createMiddleware from './src/auth/middleware';
 
+console.log('express init');
 const app: express.Application = express();
+console.log('express initalized');
 
 const loggerOptions: expressWinston.LoggerOptions = {
   transports: [new winston.transports.Console()],
@@ -27,25 +29,32 @@ app.use(express.json());
 
 const isLocal: boolean = process.argv[2] === 'LOCAL';
 
+console.log('redis init');
 let redisClient: RedisClient;
-let redisClientSub: RedisClient
 if (isLocal) {
   redisClient = createClient('6379')
-  redisClientSub = createClient('6379')
-
 } else {
-  redisClient = createClient('redis://auth-redis.cb8xna.0001.use1.cache.amazonaws.com');
-  redisClientSub = createClient('redis://auth-redis.cb8xna.0001.use1.cache.amazonaws.com');
+  redisClient = createClient(process.env.REDIS_URL);
 }
+console.log('redis initalized');
+//redis://auth-redis.cb8xna.0001.use1.cache.amazonaws.com
 
-redisClientSub.config('set', 'notify-keyspace-events', 'KEA')
-redisClientSub.subscribe('__keyevent@0__:expired');
-// you can target a specific key with a second parameter
-// example, client_redis.subscribe('__keyevent@0__:set', 'mykey')
 
-redisClientSub.on('message', function (channel, key) {
-  console.log(channel, key);
-});
+redisClient.ping((err: Error, reply: string) => {
+  console.log(`ping response: ${err}, ${reply}`);
+})
+
+
+// redisClientSub.config('set', 'notify-keyspace-events', 'KEA')
+// redisClientSub.subscribe('__keyevent@0__:expired');
+// // you can target a specific key with a second parameter
+// // example, client_redis.subscribe('__keyevent@0__:set', 'mykey')
+
+// redisClientSub.on('message', function (channel, key) {
+//   console.log(channel, key);
+// });
+
+console.log('mfa init');
 
 const mfa: MFAProvider = new MFAProvider(new MFARedisDB(redisClient))
 
@@ -79,9 +88,14 @@ app.post('/user/register', (req: express.Request, res: express.Response) => {
   const username = req.body.username;
   const password = req.body.password;
 
-  const user: User = auth.createUser(username, password)
+  auth.createUser(username, password, (registered: boolean) => {
+    if (registered) {
+      res.status(201).send({ username: username, password: password })
+    } else {
+      res.status(400).send({ error: 'failed to register' })
+    }
+  })
 
-  res.status(200).json(user)
 })
 
 app.post('/user/login', (req: express.Request, res: express.Response) => {
@@ -93,14 +107,13 @@ app.post('/user/login', (req: express.Request, res: express.Response) => {
       if (valid) {
         res.status(200).send({ token: t })
       } else {
-        res.status(400).send()
+        res.status(400).send({ error: 'invalid password' })
       }
     })
   })
 })
 
-
-app.get('/user/:username', sessionMiddleware, (req: express.Request, res: express.Response) => {
+app.get('/user/:username', (req: express.Request, res: express.Response) => {
   const username = req.params.username;
 
   auth.getUser(username, (u: User) => {
